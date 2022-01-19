@@ -32,6 +32,11 @@ public class CameraTexture : MonoBehaviour
         WebCamDevice[] devices = WebCamTexture.devices;
         int cameraCount = devices.Length;
 
+        foreach (WebCamDevice device in devices)
+        {
+            Debug.Log(device.name);
+        }
+
         if (cameraCount == 0)
         {
             Mat img = new Mat(new Size(640, 240), DepthType.Cv8U, 3);
