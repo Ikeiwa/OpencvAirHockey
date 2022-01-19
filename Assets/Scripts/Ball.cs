@@ -30,7 +30,7 @@ public class Ball : MonoBehaviour
         if (body.velocity.magnitude > 1)
         {
             audioSource.pitch = Random.Range(0.9f, 1.1f);
-            audioSource.PlayOneShot(hitSounds[Random.Range(0,hitSounds.Length)], body.velocity.magnitude/10f);
+            audioSource.PlayOneShot(hitSounds[Random.Range(0,hitSounds.Length)], Mathf.Clamp01(body.velocity.magnitude/10f));
             if (other.gameObject.layer == 8)
             {
                 StopCoroutine(nameof(PlayLightEffect));
