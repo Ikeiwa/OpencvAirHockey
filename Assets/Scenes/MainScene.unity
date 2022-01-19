@@ -8280,7 +8280,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0d61361494ef7134fb15b53cb5050b00, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cameraIndex: 0
+  cameraIndex: 2
+  resolution: 0
   imgDisplay: {fileID: 425400072}
 --- !u!4 &1530761825
 Transform:
