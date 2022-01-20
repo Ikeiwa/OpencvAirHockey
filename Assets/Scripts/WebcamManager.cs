@@ -54,7 +54,7 @@ public struct WebcamCaps
 
     public override string ToString()
     {
-        return minCX + " - " + minCY + " - " + (int)Fps();
+        return minCX + " - " + minCY + " - " + (int)Fps() + " - " + format;
     }
 }
 

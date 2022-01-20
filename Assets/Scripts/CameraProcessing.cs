@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
 using UnityEngine;
 using Emgu.CV;
 using Emgu.CV.Aruco;
@@ -19,11 +20,14 @@ public class CameraProcessing : MonoBehaviour
     public float markersLength = 80;
     public PlayerHand[] hands;
     public RawImage imgDisplay;
+    public GameObject calibrationBoard;
 
     private VideoCapture capture;
     private Mat camImg;
     private DetectorParameters arucoParameters;
     private Dictionary arucoDictionary;
+    private bool calibrated = false;
+    private Mat calibrationMat;
 
     public void SetCamera(int id)
     {
@@ -63,6 +67,14 @@ public class CameraProcessing : MonoBehaviour
         return center;
     }
 
+    PointF GetMarkerCenterCV(VectorOfPointF corner)
+    {
+        PointF center = new PointF(
+            (corner[0].X + corner[1].X + corner[2].X + corner[3].X) / 4.0f,
+            (corner[0].Y + corner[1].Y + corner[2].Y + corner[3].Y) / 4.0f);
+        return center;
+    }
+
     private void CaptureOnImageGrabbed(object sender, EventArgs e)
     {
         capture.Retrieve(camImg);
@@ -72,6 +84,12 @@ public class CameraProcessing : MonoBehaviour
             VectorOfInt ids = new VectorOfInt();
             VectorOfVectorOfPointF corners = new VectorOfVectorOfPointF();
             VectorOfVectorOfPointF rejected = new VectorOfVectorOfPointF();
+
+            if (calibrated)
+            {
+                CvInvoke.WarpPerspective(camImg,camImg,calibrationMat,new Size(capture.Width, capture.Height));
+            }
+
             ArucoInvoke.DetectMarkers(camImg, arucoDictionary, corners, ids, arucoParameters, rejected);
 
             if (ids.Size > 0)
@@ -85,7 +103,33 @@ public class CameraProcessing : MonoBehaviour
                     markers.Add(ids[i], GetMarkerCenter(corners[i]));
                 }
 
-                UnityMainThreadDispatcher.Instance().Enqueue(UpdateTrackers(markers));
+                if(calibrated)
+                    UnityMainThreadDispatcher.Instance().Enqueue(UpdateTrackers(markers));
+                else
+                {
+                    if (ids.Size == 4)
+                    {
+                        PointF tl = corners[3][0];
+                        PointF tr = corners[2][1];
+                        PointF br = corners[0][2];
+                        PointF bl = corners[1][3];
+
+                        PointF[] rect = new PointF[] {tl, tr, br, bl};
+
+                        Debug.Log(rect[1]);
+
+                        PointF[] dst = new PointF[]
+                        {
+                            new PointF(0,0),
+                            new PointF(capture.Width-1,0),
+                            new PointF(capture.Width-1,capture.Height-1),
+                            new PointF(0,capture.Height-1)
+                        };
+
+                        calibrationMat = CvInvoke.GetPerspectiveTransform(rect, dst);
+                        calibrated = true;
+                    }
+                }
             }
         }
 
@@ -130,5 +174,7 @@ public class CameraProcessing : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (calibrated && calibrationBoard.activeSelf)
+            calibrationBoard.SetActive(false);
     }
 }
