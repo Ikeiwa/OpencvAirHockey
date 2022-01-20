@@ -148,7 +148,7 @@ public class CameraProcessing : MonoBehaviour
             for (int i = 0; i < hands.Length; i++)
             {
                 if(markers.ContainsKey(i))
-                    hands[i].position = (markers[i] - new Vector2(0.5f, 0.5f)) * 8;
+                    hands[i].position = Vector3.Scale(markers[i] - new Vector2(0.5f, 0.5f), new Vector3(8,4,1));
             }
         }
 
