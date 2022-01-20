@@ -8,12 +8,14 @@ using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
 using Emgu.CV.Util;
 using UnityEngine.UI;
+using TMPro;
 
 public class CameraProcessing : MonoBehaviour
 {
     public int cameraIndex = 0;
-    public string leftMarker = "marker_left.png";
-    public string rightMarker = "marker_right.png";
+    public int fps = 30;
+    public int width = 1280;
+    public int height = 720;
     public float markersLength = 80;
     public PlayerHand[] hands;
     public RawImage imgDisplay;
@@ -23,25 +25,30 @@ public class CameraProcessing : MonoBehaviour
     private DetectorParameters arucoParameters;
     private Dictionary arucoDictionary;
 
-    private bool hasFrame = false;
+    public void SetCamera(int id)
+    {
+        //id = id.Split(new string[] {" - "}, StringSplitOptions.RemoveEmptyEntries)[0];
+        cameraIndex = id;
+    }
 
-    private void Awake()
+    public void SetResolution(string res)
+    {
+        string[] infos = res.Split(new string[] { " - " }, StringSplitOptions.RemoveEmptyEntries);
+        width = int.Parse(infos[0]);
+        height = int.Parse(infos[1]);
+        fps = int.Parse(infos[2]);
+    }
+
+    public void StartTracking()
     {
         arucoParameters = DetectorParameters.GetDefault();
         arucoDictionary = new Dictionary(Dictionary.PredefinedDictionaryName.Dict4X4_100);
 
-        WebCamDevice[] devices = WebCamTexture.devices;
-
-        for (int i = 0; i < devices.Length; i++)
-        {
-            Debug.Log(i + " : " + devices[i].name);
-        }
-
         capture = new VideoCapture(cameraIndex, VideoCapture.API.DShow, new Tuple<CapProp, int>[]
         {
-            new Tuple<CapProp, int>(CapProp.Fps, 30), 
-            new Tuple<CapProp, int>(CapProp.FrameWidth,1280), 
-            new Tuple<CapProp, int>(CapProp.FrameHeight,720)
+            new Tuple<CapProp, int>(CapProp.Fps, fps), 
+            new Tuple<CapProp, int>(CapProp.FrameWidth,width), 
+            new Tuple<CapProp, int>(CapProp.FrameHeight,height)
         });
         camImg = new Mat(capture.Height, capture.Width, DepthType.Default, 3);
         capture.ImageGrabbed += CaptureOnImageGrabbed;
@@ -59,7 +66,6 @@ public class CameraProcessing : MonoBehaviour
     private void CaptureOnImageGrabbed(object sender, EventArgs e)
     {
         capture.Retrieve(camImg);
-        
 
         if (!camImg.IsEmpty)
         {
@@ -80,40 +86,16 @@ public class CameraProcessing : MonoBehaviour
                 }
 
                 UnityMainThreadDispatcher.Instance().Enqueue(UpdateTrackers(markers));
-
-                /*#region Estimate pose for each marker using camera calibration matrix and distortion coefficents
-                Mat rvecs = new Mat(); // rotation vector
-                Mat tvecs = new Mat(); // translation vector
-                ArucoInvoke.EstimatePoseSingleMarkers(corners, markersLength, cameraMatrix, distortionMatrix, rvecs, tvecs);
-                #endregion
-
-                #region Draw 3D orthogonal axis on markers using estimated pose
-                for (int i = 0; i < ids.Size; i++)
-                {
-                    using (Mat rvecMat = rvecs.Row(i))
-                    using (Mat tvecMat = tvecs.Row(i))
-                    using (VectorOfDouble rvec = new VectorOfDouble())
-                    using (VectorOfDouble tvec = new VectorOfDouble())
-                    {
-                        double[] values = new double[3];
-                        rvecMat.CopyTo(values);
-                        rvec.Push(values);
-                        tvecMat.CopyTo(values);
-                        tvec.Push(values);
-                        ArucoInvoke.DrawAxis(camImg,
-                            cameraMatrix,
-                            distortionMatrix,
-                            rvec,
-                            tvec,
-                            markersLength * 0.5f);
-
-                    }
-                }
-                #endregion*/
             }
         }
 
-        hasFrame = true;
+        UnityMainThreadDispatcher.Instance().Enqueue(UpdateImageDisplay(camImg));
+    }
+
+    public IEnumerator UpdateImageDisplay(Mat imgResult)
+    {
+        imgDisplay.texture = imgResult.ToTexture2D();
+        yield return null;
     }
 
     public IEnumerator UpdateTrackers(Dictionary<int,Vector2> markers)
@@ -132,8 +114,11 @@ public class CameraProcessing : MonoBehaviour
 
     private void OnApplicationQuit()
     {
-        capture.Stop();
-        capture.Dispose();
+        if (capture != null)
+        {
+            capture.Stop();
+            capture.Dispose();
+        }
     }
 
     // Start is called before the first frame update
@@ -145,10 +130,5 @@ public class CameraProcessing : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (capture.IsOpened && hasFrame)
-        {
-            hasFrame = false;
-            imgDisplay.texture = camImg.ToTexture2D();
-        }
     }
 }
