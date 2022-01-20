@@ -15,6 +15,7 @@ public class Ball : MonoBehaviour
     private Rigidbody2D body;
     private AudioSource audioSource;
     private CircleCollider2D col;
+    private TrailRenderer trail;
 
     private FieldSide respawnSide = FieldSide.None;
 
@@ -23,6 +24,7 @@ public class Ball : MonoBehaviour
         body = GetComponent<Rigidbody2D>();
         audioSource = GetComponent<AudioSource>();
         col = GetComponent<CircleCollider2D>();
+        trail = GetComponent<TrailRenderer>();
     }
 
     private void OnCollisionEnter2D(Collision2D other)
@@ -68,14 +70,16 @@ public class Ball : MonoBehaviour
         transform.position = respawnSide == FieldSide.Left ? new Vector3(1, 0, 0) : new Vector3(-1, 0, 0);
         if(Physics2D.OverlapCircle(transform.position,col.radius,1 << 8))
             body.isKinematic = true;
+        trail.Clear();
     }
 
     private void OnCollisionExit2D(Collision2D other)
     {
-        if (respawnSide != FieldSide.None)
+        /*if (respawnSide != FieldSide.None)
         {
             respawnSide = FieldSide.None;
             body.isKinematic = false;
-        }
+        }*/
+        body.isKinematic = false;
     }
 }

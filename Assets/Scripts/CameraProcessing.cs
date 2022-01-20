@@ -100,7 +100,8 @@ public class CameraProcessing : MonoBehaviour
 
                 for (int i = 0; i < ids.Size; i++)
                 {
-                    markers.Add(ids[i], GetMarkerCenter(corners[i]));
+                    if(!markers.ContainsKey(ids[i]))
+                        markers.Add(ids[i], GetMarkerCenter(corners[i]));
                 }
 
                 if(calibrated)
@@ -115,8 +116,6 @@ public class CameraProcessing : MonoBehaviour
                         PointF bl = corners[1][3];
 
                         PointF[] rect = new PointF[] {tl, tr, br, bl};
-
-                        Debug.Log(rect[1]);
 
                         PointF[] dst = new PointF[]
                         {
@@ -176,5 +175,11 @@ public class CameraProcessing : MonoBehaviour
     {
         if (calibrated && calibrationBoard.activeSelf)
             calibrationBoard.SetActive(false);
+
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            calibrationBoard.SetActive(true);
+            calibrated = false;
+        }
     }
 }
