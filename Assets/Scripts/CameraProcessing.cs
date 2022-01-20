@@ -148,7 +148,7 @@ public class CameraProcessing : MonoBehaviour
             for (int i = 0; i < hands.Length; i++)
             {
                 if(markers.ContainsKey(i))
-                    hands[i].position = Vector3.Scale(markers[i] - new Vector2(0.5f, 0.5f), new Vector3(8,4,1));
+                    hands[i].position = Vector3.Scale(markers[i] - new Vector2(0.5f, 0.5f), new Vector3(7.8f,3.8f,1));
             }
         }
 
@@ -181,5 +181,8 @@ public class CameraProcessing : MonoBehaviour
             calibrationBoard.SetActive(true);
             calibrated = false;
         }
+
+        if(Input.GetKeyDown(KeyCode.V))
+            imgDisplay.gameObject.SetActive(!imgDisplay.gameObject.activeSelf);
     }
 }
