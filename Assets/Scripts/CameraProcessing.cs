@@ -18,6 +18,7 @@ public class CameraProcessing : MonoBehaviour
     public int width = 1280;
     public int height = 720;
     public float markersLength = 80;
+    public int threshold = 25;
     public PlayerHand[] hands;
     public RawImage imgDisplay;
     public GameObject calibrationBoard;
@@ -77,24 +78,29 @@ public class CameraProcessing : MonoBehaviour
 
     private void CaptureOnImageGrabbed(object sender, EventArgs e)
     {
-        capture.Retrieve(camImg);
+        Mat camView = new Mat(capture.Height, capture.Width, DepthType.Default, 3);
+        capture.Retrieve(camView);
 
-        if (!camImg.IsEmpty)
+        if (!camView.IsEmpty)
         {
             VectorOfInt ids = new VectorOfInt();
             VectorOfVectorOfPointF corners = new VectorOfVectorOfPointF();
             VectorOfVectorOfPointF rejected = new VectorOfVectorOfPointF();
 
+            CvInvoke.CvtColor(camView, camView, ColorConversion.Bgr2Hsv);
+            Mat camValue = new Mat(capture.Height, capture.Width, DepthType.Default, 1);
+            CvInvoke.Threshold(camView.Split()[2], camValue, threshold, 255, ThresholdType.Binary);
+
             if (calibrated)
             {
-                CvInvoke.WarpPerspective(camImg,camImg,calibrationMat,new Size(capture.Width, capture.Height));
+                CvInvoke.WarpPerspective(camValue,camValue,calibrationMat,new Size(capture.Width, capture.Height));
             }
 
-            ArucoInvoke.DetectMarkers(camImg, arucoDictionary, corners, ids, arucoParameters, rejected);
+            ArucoInvoke.DetectMarkers(camValue, arucoDictionary, corners, ids, arucoParameters, rejected);
 
             if (ids.Size > 0)
             {
-                ArucoInvoke.DrawDetectedMarkers(camImg, corners, ids, new MCvScalar(255, 0, 255));
+                ArucoInvoke.DrawDetectedMarkers(camValue, corners, ids, new MCvScalar(255, 0, 255));
 
                 Dictionary<int, Vector2> markers = new Dictionary<int, Vector2>();
 
@@ -130,9 +136,10 @@ public class CameraProcessing : MonoBehaviour
                     }
                 }
             }
-        }
 
-        UnityMainThreadDispatcher.Instance().Enqueue(UpdateImageDisplay(camImg));
+            CvInvoke.CvtColor(camValue,camImg,ColorConversion.Gray2Bgr);
+            UnityMainThreadDispatcher.Instance().Enqueue(UpdateImageDisplay(camImg));
+        }
     }
 
     public IEnumerator UpdateImageDisplay(Mat imgResult)
@@ -184,5 +191,10 @@ public class CameraProcessing : MonoBehaviour
 
         if(Input.GetKeyDown(KeyCode.V))
             imgDisplay.gameObject.SetActive(!imgDisplay.gameObject.activeSelf);
+
+        if (Input.mouseScrollDelta.y != 0)
+        {
+            threshold += (int)Input.mouseScrollDelta.y;
+        }
     }
 }
