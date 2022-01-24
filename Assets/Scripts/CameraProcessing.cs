@@ -10,6 +10,7 @@ using Emgu.CV.Structure;
 using Emgu.CV.Util;
 using UnityEngine.UI;
 using TMPro;
+using System.Linq;
 
 public class CameraProcessing : MonoBehaviour
 {
@@ -116,10 +117,12 @@ public class CameraProcessing : MonoBehaviour
                 {
                     if (ids.Size == 4)
                     {
-                        PointF tl = corners[3][0];
-                        PointF tr = corners[2][1];
-                        PointF br = corners[0][2];
-                        PointF bl = corners[1][3];
+                        int[] cornerIds = ids.ToArray();
+
+                        PointF tl = corners[cornerIds.FirstOrDefault(i => i == 2)][0];
+                        PointF tr = corners[cornerIds.FirstOrDefault(i => i == 3)][1];
+                        PointF br = corners[cornerIds.FirstOrDefault(i => i == 0)][2];
+                        PointF bl = corners[cornerIds.FirstOrDefault(i => i == 1)][3];
 
                         PointF[] rect = new PointF[] {tl, tr, br, bl};
 
