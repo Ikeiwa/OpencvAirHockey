@@ -30,6 +30,7 @@ public class CameraProcessing : MonoBehaviour
     private Dictionary arucoDictionary;
     private bool calibrated = false;
     private Mat calibrationMat;
+    private bool previewActive = false;
 
     public void SetCamera(int id)
     {
@@ -52,8 +53,8 @@ public class CameraProcessing : MonoBehaviour
 
         capture = new VideoCapture(cameraIndex, VideoCapture.API.DShow, new Tuple<CapProp, int>[]
         {
-            new Tuple<CapProp, int>(CapProp.Fps, fps), 
-            new Tuple<CapProp, int>(CapProp.FrameWidth,width), 
+            new Tuple<CapProp, int>(CapProp.Fps, fps),
+            new Tuple<CapProp, int>(CapProp.FrameWidth,width),
             new Tuple<CapProp, int>(CapProp.FrameHeight,height)
         });
         camImg = new Mat(capture.Height, capture.Width, DepthType.Default, 3);
@@ -65,7 +66,7 @@ public class CameraProcessing : MonoBehaviour
     {
         Vector2 center = new Vector2(
             (corner[0].X + corner[1].X + corner[2].X + corner[3].X) / 4.0f / capture.Width,
-            1-((corner[0].Y + corner[1].Y + corner[2].Y + corner[3].Y) / 4.0f / capture.Height));
+            1 - ((corner[0].Y + corner[1].Y + corner[2].Y + corner[3].Y) / 4.0f / capture.Height));
         return center;
     }
 
@@ -94,7 +95,7 @@ public class CameraProcessing : MonoBehaviour
 
             if (calibrated)
             {
-                CvInvoke.WarpPerspective(camValue,camValue,calibrationMat,new Size(capture.Width, capture.Height));
+                CvInvoke.WarpPerspective(camValue, camValue, calibrationMat, new Size(capture.Width, capture.Height));
             }
 
             ArucoInvoke.DetectMarkers(camValue, arucoDictionary, corners, ids, arucoParameters, rejected);
@@ -107,24 +108,43 @@ public class CameraProcessing : MonoBehaviour
 
                 for (int i = 0; i < ids.Size; i++)
                 {
-                    if(!markers.ContainsKey(ids[i]))
+                    if (!markers.ContainsKey(ids[i]))
                         markers.Add(ids[i], GetMarkerCenter(corners[i]));
                 }
 
-                if(calibrated)
+                if (calibrated)
                     UnityMainThreadDispatcher.Instance().Enqueue(UpdateTrackers(markers));
                 else
                 {
                     if (ids.Size == 4)
                     {
-                        int[] cornerIds = ids.ToArray();
 
-                        PointF tl = corners[cornerIds.FirstOrDefault(i => i == 2)][0];
-                        PointF tr = corners[cornerIds.FirstOrDefault(i => i == 3)][1];
-                        PointF br = corners[cornerIds.FirstOrDefault(i => i == 0)][2];
-                        PointF bl = corners[cornerIds.FirstOrDefault(i => i == 1)][3];
+                        List<float> sums = new List<float>(new float[]
+                        {
+                            GetMarkerCenterCV(corners[0]).X + GetMarkerCenterCV(corners[0]).Y,
+                            GetMarkerCenterCV(corners[1]).X + GetMarkerCenterCV(corners[1]).Y,
+                            GetMarkerCenterCV(corners[2]).X + GetMarkerCenterCV(corners[2]).Y,
+                            GetMarkerCenterCV(corners[3]).X + GetMarkerCenterCV(corners[3]).Y
+                        });
 
-                        PointF[] rect = new PointF[] {tl, tr, br, bl};
+                        int indexTL = sums.IndexOf(sums.Min()), indexBR = sums.IndexOf(sums.Max());
+                        PointF topLeft = corners[indexTL][0];
+                        PointF botRight = corners[indexBR][2];
+                        List<int> idbuffers = new List<int>(new int[] { 0, 1, 2, 3 });
+                        idbuffers.RemoveAt(indexBR < indexTL ? indexTL : indexBR);
+                        idbuffers.RemoveAt(indexBR < indexTL ? indexBR : indexTL);
+
+                        PointF topRight = corners[idbuffers[0]][0].Y < corners[idbuffers[1]][0].Y ? corners[idbuffers[0]][1] : corners[idbuffers[1]][1];
+                        PointF botLeft = corners[idbuffers[0]][0].Y < corners[idbuffers[1]][0].Y ? corners[idbuffers[1]][3] : corners[idbuffers[0]][3];
+
+                        //int[] cornerIds = ids.ToArray();
+
+                        //PointF tl = corners[cornerIds.FirstOrDefault(i => i == 2)][0];
+                        //PointF tr = corners[cornerIds.FirstOrDefault(i => i == 3)][1];
+                        //PointF br = corners[cornerIds.FirstOrDefault(i => i == 0)][2];
+                        //PointF bl = corners[cornerIds.FirstOrDefault(i => i == 1)][3];
+
+                        PointF[] rect = new PointF[] { topLeft, topRight, botRight, botLeft };
 
                         PointF[] dst = new PointF[]
                         {
@@ -135,12 +155,13 @@ public class CameraProcessing : MonoBehaviour
                         };
 
                         calibrationMat = CvInvoke.GetPerspectiveTransform(rect, dst);
-                        calibrated = true;
+                        if (!previewActive)
+                            calibrated = true;
                     }
                 }
             }
 
-            CvInvoke.CvtColor(camValue,camImg,ColorConversion.Gray2Bgr);
+            CvInvoke.CvtColor(camValue, camImg, ColorConversion.Gray2Bgr);
             UnityMainThreadDispatcher.Instance().Enqueue(UpdateImageDisplay(camImg));
         }
     }
@@ -151,14 +172,14 @@ public class CameraProcessing : MonoBehaviour
         yield return null;
     }
 
-    public IEnumerator UpdateTrackers(Dictionary<int,Vector2> markers)
+    public IEnumerator UpdateTrackers(Dictionary<int, Vector2> markers)
     {
         if (hands.Length > 0)
         {
             for (int i = 0; i < hands.Length; i++)
             {
-                if(markers.ContainsKey(i))
-                    hands[i].position = Vector3.Scale(markers[i] - new Vector2(0.5f, 0.5f), new Vector3(7.8f,3.8f,1));
+                if (markers.ContainsKey(i))
+                    hands[i].position = Vector3.Scale(markers[i] - new Vector2(0.5f, 0.5f), new Vector3(7.8f, 3.8f, 1));
             }
         }
 
@@ -177,7 +198,7 @@ public class CameraProcessing : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+
     }
 
     // Update is called once per frame
@@ -192,8 +213,11 @@ public class CameraProcessing : MonoBehaviour
             calibrated = false;
         }
 
-        if(Input.GetKeyDown(KeyCode.V))
-            imgDisplay.gameObject.SetActive(!imgDisplay.gameObject.activeSelf);
+        if (Input.GetKeyDown(KeyCode.V))
+        {
+            previewActive = !previewActive;
+            imgDisplay.gameObject.SetActive(previewActive);
+        }
 
         if (Input.mouseScrollDelta.y != 0)
         {
