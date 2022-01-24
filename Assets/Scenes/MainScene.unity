@@ -2385,7 +2385,7 @@ Light:
   serializedVersion: 10
   m_Type: 2
   m_Shape: 0
-  m_Color: {r: 0, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0.34901962, b: 0.8509804, a: 1}
   m_Intensity: 2.31
   m_Range: 1.96
   m_SpotAngle: 30
@@ -2871,8 +2871,8 @@ LineRenderer:
       m_RotationOrder: 4
     colorGradient:
       serializedVersion: 2
-      key0: {r: 0, g: 1, b: 1, a: 1}
-      key1: {r: 0, g: 1, b: 1, a: 1}
+      key0: {r: 0, g: 0.34901962, b: 0.8509804, a: 1}
+      key1: {r: 0, g: 0.34901962, b: 0.8509804, a: 1}
       key2: {r: 0, g: 0, b: 0, a: 0}
       key3: {r: 0, g: 0, b: 0, a: 0}
       key4: {r: 0, g: 0, b: 0, a: 0}
@@ -8537,7 +8537,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: d1d45a6dabd38da4d867a46af2df45b5, type: 3}
-  m_Color: {r: 0, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0.34901962, b: 0.8509804, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -9536,8 +9536,8 @@ LineRenderer:
       m_RotationOrder: 4
     colorGradient:
       serializedVersion: 2
-      key0: {r: 0, g: 1, b: 1, a: 1}
-      key1: {r: 0, g: 1, b: 1, a: 1}
+      key0: {r: 0, g: 0.34901962, b: 0.8509804, a: 1}
+      key1: {r: 0, g: 0.34901962, b: 0.8509804, a: 1}
       key2: {r: 0, g: 0, b: 0, a: 0}
       key3: {r: 0, g: 0, b: 0, a: 0}
       key4: {r: 0, g: 0, b: 0, a: 0}
@@ -10785,6 +10785,7 @@ MonoBehaviour:
   width: 1280
   height: 720
   markersLength: 80
+  threshold: 25
   hands:
   - {fileID: 993798481}
   - {fileID: 315329490}
