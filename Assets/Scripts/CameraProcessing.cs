@@ -25,12 +25,12 @@ public class CameraProcessing : MonoBehaviour
     public GameObject calibrationBoard;
 
     private VideoCapture capture;
-    private Mat camImg;
     private DetectorParameters arucoParameters;
     private Dictionary arucoDictionary;
     private bool calibrated = false;
     private Mat calibrationMat;
     private bool previewActive = false;
+    private Texture2D previewTexture;
 
     public void SetCamera(int id)
     {
@@ -57,7 +57,6 @@ public class CameraProcessing : MonoBehaviour
             new Tuple<CapProp, int>(CapProp.FrameWidth,width),
             new Tuple<CapProp, int>(CapProp.FrameHeight,height)
         });
-        camImg = new Mat(capture.Height, capture.Width, DepthType.Default, 3);
         capture.ImageGrabbed += CaptureOnImageGrabbed;
         capture.Start();
     }
@@ -113,7 +112,7 @@ public class CameraProcessing : MonoBehaviour
                 }
 
                 if (calibrated)
-                    UnityMainThreadDispatcher.Instance().Enqueue(UpdateTrackers(markers));
+                    UnityMainThreadDispatcher.Instance().Enqueue(UpdateTrackers(new Dictionary<int, Vector2>(markers)));
                 else
                 {
                     if (ids.Size == 4)
@@ -137,13 +136,6 @@ public class CameraProcessing : MonoBehaviour
                         PointF topRight = corners[idbuffers[0]][0].Y < corners[idbuffers[1]][0].Y ? corners[idbuffers[0]][1] : corners[idbuffers[1]][1];
                         PointF botLeft = corners[idbuffers[0]][0].Y < corners[idbuffers[1]][0].Y ? corners[idbuffers[1]][3] : corners[idbuffers[0]][3];
 
-                        //int[] cornerIds = ids.ToArray();
-
-                        //PointF tl = corners[cornerIds.FirstOrDefault(i => i == 2)][0];
-                        //PointF tr = corners[cornerIds.FirstOrDefault(i => i == 3)][1];
-                        //PointF br = corners[cornerIds.FirstOrDefault(i => i == 0)][2];
-                        //PointF bl = corners[cornerIds.FirstOrDefault(i => i == 1)][3];
-
                         PointF[] rect = new PointF[] { topLeft, topRight, botRight, botLeft };
 
                         PointF[] dst = new PointF[]
@@ -161,14 +153,23 @@ public class CameraProcessing : MonoBehaviour
                 }
             }
 
-            CvInvoke.CvtColor(camValue, camImg, ColorConversion.Gray2Bgr);
-            UnityMainThreadDispatcher.Instance().Enqueue(UpdateImageDisplay(camImg));
+            if (previewActive)
+            {
+                Mat camImg = new Mat();
+                CvInvoke.CvtColor(camValue, camImg, ColorConversion.Gray2Bgr);
+                UnityMainThreadDispatcher.Instance().Enqueue(UpdateImageDisplay(camImg));
+            }
+            
+            camValue.Dispose();
         }
     }
 
     public IEnumerator UpdateImageDisplay(Mat imgResult)
     {
-        imgDisplay.texture = imgResult.ToTexture2D();
+        Destroy(previewTexture);
+        imgResult.ToTexture2D(ref previewTexture);
+        imgDisplay.texture = previewTexture;
+        imgResult.Dispose();
         yield return null;
     }
 

@@ -79,7 +79,7 @@ namespace Emgu.CV
         /// <param name="flipType"></param>
         /// <param name="buffer">Optional buffer for the texture conversion, should be big enough to hold the image data. e.g. width*height*pixel_size</param>
         /// <returns>The texture 2D</returns>
-        public static Texture2D ToTexture2D(this IInputArray image, Emgu.CV.CvEnum.FlipType? flipType = FlipType.Vertical, byte[] buffer = null)
+        public static Texture2D ToTexture2D(this IInputArray image,ref Texture2D texture, Emgu.CV.CvEnum.FlipType? flipType = FlipType.Vertical, byte[] buffer = null)
         {
             using (InputArray iaImage = image.GetInputArray())
             {
@@ -88,7 +88,8 @@ namespace Emgu.CV
                 if (iaImage.GetChannels() == 3 && iaImage.GetDepth() == DepthType.Cv8U && SystemInfo.SupportsTextureFormat(TextureFormat.RGB24))
                 {
                     //assuming 3 channel image is of BGR color
-                    Texture2D texture = new Texture2D(size.Width, size.Height, TextureFormat.RGB24, false);
+                    if(texture == null) 
+                        texture = new Texture2D(size.Width, size.Height, TextureFormat.RGB24, false);
 
                     byte[] data;
                     int bufferLength = size.Width * size.Height * 3;
@@ -115,7 +116,8 @@ namespace Emgu.CV
                 }
                 else if (SystemInfo.SupportsTextureFormat(TextureFormat.RGBA32))
                 {
-                    Texture2D texture = new Texture2D(size.Width, size.Height, TextureFormat.RGBA32, false);
+                    if (texture == null)
+                        texture = new Texture2D(size.Width, size.Height, TextureFormat.RGBA32, false);
                     byte[] data;
                     int bufferLength = size.Width * size.Height * 4;
                     if (buffer != null)
